@@ -27,7 +27,7 @@ The fastest, most responsive & trendiest dashboard is here. Seriously.
 With Horizon UI you will find many examples for pages like NFTs Pages,
 Authentication Pages, Profile and so on. Just choose between a Basic Design or a
 cover and you are good to go!
-
+qwe
 ### 🎉 [NEW] Horizon UI Components
 
 All the main components from both versions, this will help you to see and interact with all & the latest added components of Horizon (also, new components are on the way, stay tuned)! ⚡️
