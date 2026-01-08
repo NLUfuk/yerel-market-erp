@@ -29,7 +29,7 @@ export class TenantEntity {
   @Column({ type: 'nvarchar', length: 255, nullable: true })
   email?: string;
 
-  @Column({ type: 'boolean', default: true })
+  @Column({ type: 'bit', default: true })
   isActive: boolean;
 
   @CreateDateColumn()

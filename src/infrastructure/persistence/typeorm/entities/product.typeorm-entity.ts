@@ -57,7 +57,7 @@ export class ProductEntity {
   @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
   minStockLevel: number;
 
-  @Column({ type: 'boolean', default: true })
+  @Column({ type: 'bit', default: true })
   isActive: boolean;
 
   @CreateDateColumn()

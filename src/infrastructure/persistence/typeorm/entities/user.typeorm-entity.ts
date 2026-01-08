@@ -42,7 +42,7 @@ export class UserEntity {
   @JoinColumn({ name: 'tenantId' })
   tenant?: TenantEntity;
 
-  @Column({ type: 'boolean', default: true })
+  @Column({ type: 'bit', default: true })
   isActive: boolean;
 
   @CreateDateColumn()

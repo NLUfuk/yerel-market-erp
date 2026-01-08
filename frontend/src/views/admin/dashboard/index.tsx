@@ -19,6 +19,7 @@ function Dashboard() {
   // Use useContext directly to avoid throwing error if AuthProvider is not available
   const authContext = useContext(AuthContext);
   const user = authContext?.user || null;
+  const isAuthenticated = authContext?.isAuthenticated || false;
   const brandColor = useColorModeValue('brand.500', 'white');
   const boxBg = useColorModeValue('secondaryGray.300', 'whiteAlpha.100');
   
@@ -29,8 +30,13 @@ function Dashboard() {
   const [lowStockCount, setLowStockCount] = useState(0);
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    // Only load data if user is authenticated
+    if (isAuthenticated) {
+      loadDashboardData();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   const loadDashboardData = async () => {
     try {

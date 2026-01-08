@@ -2,8 +2,14 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 
 /**
  * API Base URL
+ * Backend runs on port 4000
  */
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_BASE_URL = 'http://localhost:4000';
+
+// Debug: Log API base URL (remove in production)
+if (process.env.NODE_ENV === 'development') {
+  console.log('🔗 API Base URL:', API_BASE_URL);
+}
 
 /**
  * Create axios instance with default config

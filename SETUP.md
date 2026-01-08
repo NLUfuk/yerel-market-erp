@@ -32,7 +32,7 @@
    - Index'ler eklendi
 
 6. ✅ **Database Konfigürasyonu**
-   - SQLite database config (better-sqlite3)
+   - SQL Server ve SQLite desteği (TypeORM)
    - Environment variables desteği
    - DatabaseModule oluşturuldu
    - Migration sistemi kuruldu
@@ -53,11 +53,22 @@
 
 ### 1. Environment Variables
 
-`.env` dosyası oluşturun (`.env.example` dosyasını kopyalayın):
+`.env` dosyası oluşturun:
 
 ```env
-# Database (SQLite)
-DB_DATABASE=database.sqlite
+# Database Type: 'mssql' or 'sqlite'
+DB_TYPE=mssql
+
+# SQL Server Configuration
+# Server: (localdb)\MSSQLLocalDB veya UFUK\SQLEXPRESS
+DB_HOST=(localdb)\MSSQLLocalDB
+DB_PORT=1433
+DB_DATABASE=yerel-market-erp
+# Windows Authentication için username ve password boş bırakılır
+DB_USERNAME=
+DB_PASSWORD=
+DB_ENCRYPT=true
+DB_TRUST_CERT=true
 DB_SYNCHRONIZE=false
 DB_LOGGING=true
 
@@ -66,10 +77,12 @@ JWT_SECRET=your-super-secret-jwt-key-change-in-production-min-32-chars
 JWT_EXPIRES_IN=24h
 
 # App
-PORT=3000
+PORT=4000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:3001
 ```
+
+**Not:** SQL Server için SSMS'de veritabanını oluşturduktan sonra `DB_HOST` ve `DB_DATABASE` değerlerini kendi sunucu ve veritabanı adınıza göre güncelleyin.
 
 ### 2. Database Migration (İlk Kurulum)
 
@@ -119,8 +132,8 @@ npm run start:prod
 ```
 
 Uygulama başladığında:
-- Backend: http://localhost:3000
-- Swagger: http://localhost:3000/api
+- Backend: http://localhost:4000
+- Swagger: http://localhost:4000/api
 
 ---
 
@@ -178,7 +191,7 @@ src/
    - **Basic**: `npm run seed` (sadece roller ve SuperAdmin)
    - **Demo Data**: `npm run seed:demo` (örnek tenant'lar, kullanıcılar, ürünler)
 4. Uygulamayı başlatın: `npm run start:dev`
-5. Swagger'a gidin: http://localhost:3000/api
+5. Swagger'a gidin: http://localhost:4000/api
 6. Login yapın:
    - **SuperAdmin**: `admin@localgroceryhub.com` / `Admin123!`
    - **Demo Tenant Admin**: `admin@bakkal-ahmet.com` / `Demo123!` veya `admin@marketcan.com` / `Demo123!`

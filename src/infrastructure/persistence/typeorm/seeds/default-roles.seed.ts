@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { UserEntity } from '../entities/user.typeorm-entity';
 import { UserRoleEntity } from '../entities/user-role.typeorm-entity';
 import { seedDemoData } from './demo-data.seed';
+import { randomUUID } from 'crypto';
 
 /**
  * Seed default roles
@@ -22,11 +23,12 @@ export async function seedDefaultRoles(dataSource: DataSource): Promise<void> {
   for (const roleData of roles) {
     const existingRole = await roleRepository.findOneBy({ name: roleData.name });
     if (!existingRole) {
-      const role = roleRepository.create({
-        name: roleData.name,
-        description: roleData.description,
-      });
-      await roleRepository.save(role);
+      // SQL Server'da varchar UUID için raw SQL kullan
+      const roleId = randomUUID();
+      await dataSource.query(
+        `INSERT INTO "roles"("id", "name", "description", "createdAt") VALUES (@0, @1, @2, GETDATE())`,
+        [roleId, roleData.name, roleData.description]
+      );
       console.log(`✅ Created role: ${roleData.name}`);
     } else {
       console.log(`⏭️  Role already exists: ${roleData.name}`);
@@ -60,16 +62,16 @@ export async function seedSuperAdmin(dataSource: DataSource): Promise<void> {
 
   // Create SuperAdmin user
   const passwordHash = await bcrypt.hash('Admin123!', 10);
-  const superAdmin = userRepository.create({
-    email: superAdminEmail,
-    passwordHash,
-    firstName: 'Super',
-    lastName: 'Admin',
-    tenantId: null as any, // SuperAdmin has no tenant
-    isActive: true,
-  });
-
-  const savedAdmin = await userRepository.save(superAdmin);
+  // SQL Server'da varchar UUID için raw SQL kullan
+  const adminId = randomUUID();
+  await dataSource.query(
+    `INSERT INTO "users"("id", "email", "passwordHash", "firstName", "lastName", "tenantId", "isActive", "createdAt", "updatedAt") VALUES (@0, @1, @2, @3, @4, NULL, 1, GETDATE(), GETDATE())`,
+    [adminId, superAdminEmail, passwordHash, 'Super', 'Admin']
+  );
+  const savedAdmin = await userRepository.findOneBy({ id: adminId });
+  if (!savedAdmin) {
+    throw new Error('Failed to create SuperAdmin user');
+  }
   console.log(`✅ Created SuperAdmin: ${superAdminEmail}`);
 
   // Assign SuperAdmin role
