@@ -7,11 +7,9 @@ import FixedPlugin from 'components/fixedPlugin/FixedPlugin';
 
 interface AuthIllustrationProps {
   children: React.ReactNode;
-  illustrationBackground?: string;
-  image?: string;
 }
 
-function AuthIllustration({ children, illustrationBackground }: AuthIllustrationProps) {
+function AuthIllustration({ children }: AuthIllustrationProps) {
   return (
     <Flex position="relative" h="max-content">
       <Flex
@@ -26,8 +24,8 @@ function AuthIllustration({ children, illustrationBackground }: AuthIllustration
         mx="auto"
         pt={{ sm: '50px', md: '0px' }}
         px={{ lg: '30px', xl: '0px' }}
-        ps={{ xl: '70px' }}
-        justifyContent="start"
+        justifyContent="center"
+        alignItems="center"
         direction="column"
       >
         <NavLink
@@ -56,26 +54,6 @@ function AuthIllustration({ children, illustrationBackground }: AuthIllustration
           </Flex>
         </NavLink>
         {children}
-        <Box
-          display={{ base: 'none', md: 'block' }}
-          h="100%"
-          minH="100vh"
-          w={{ lg: '50vw', '2xl': '44vw' }}
-          position="absolute"
-          right="0px"
-        >
-          <Flex
-            bg={`url(${illustrationBackground})`}
-            justify="center"
-            align="end"
-            w="100%"
-            h="100%"
-            bgSize="cover"
-            bgPosition="50%"
-            position="absolute"
-            borderBottomLeftRadius={{ lg: '120px', xl: '200px' }}
-          ></Flex>
-        </Box>
         <Footer />
       </Flex>
       <FixedPlugin />

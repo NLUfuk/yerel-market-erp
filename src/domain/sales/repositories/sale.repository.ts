@@ -29,5 +29,6 @@ export interface IStockMovementRepository {
   findByReferenceId(referenceId: string): Promise<StockMovement[]>;
   save(movement: StockMovement): Promise<StockMovement>;
   findAll(): Promise<StockMovement[]>;
+  delete(id: string): Promise<void>;
 }
 

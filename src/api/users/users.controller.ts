@@ -24,6 +24,7 @@ import { PaginationDto } from '../../application/shared/dto/pagination.dto';
 import { CreateUserUseCase } from '../../application/users/use-cases/create-user.usecase';
 import { UpdateUserUseCase } from '../../application/users/use-cases/update-user.usecase';
 import { ListUsersUseCase } from '../../application/users/use-cases/list-users.usecase';
+import { GetUserUseCase } from '../../application/users/use-cases/get-user.usecase';
 import { AssignRoleUseCase } from '../../application/users/use-cases/assign-role.usecase';
 import { Roles } from '../../infrastructure/security/decorators/roles.decorator';
 import { CurrentUser } from '../../infrastructure/security/decorators/current-user.decorator';
@@ -45,6 +46,7 @@ export class UsersController {
     private readonly createUserUseCase: CreateUserUseCase,
     private readonly updateUserUseCase: UpdateUserUseCase,
     private readonly listUsersUseCase: ListUsersUseCase,
+    private readonly getUserUseCase: GetUserUseCase,
     private readonly assignRoleUseCase: AssignRoleUseCase,
   ) {}
 
@@ -75,6 +77,21 @@ export class UsersController {
     @CurrentUser() user: RequestUser,
   ) {
     return this.listUsersUseCase.execute(pagination, user);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'User details',
+    type: UserResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getOne(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestUser,
+  ): Promise<UserResponseDto> {
+    return this.getUserUseCase.execute(id, user);
   }
 
   @Put(':id')

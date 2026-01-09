@@ -6,22 +6,22 @@ import {
   Inject,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { CreateSaleDto } from '../dto/create-sale.dto';
+import { UpdateSaleDto } from '../dto/update-sale.dto';
 import { SaleResponseDto } from '../dto/sale-response.dto';
 import type { IProductRepository } from '../../../domain/products/repositories/product.repository';
 import type { ISaleRepository } from '../../../domain/sales/repositories/sale.repository';
 import type { IStockMovementRepository } from '../../../domain/sales/repositories/sale.repository';
-import { Sale, PaymentMethod } from '../../../domain/sales/entities/sale.entity';
+import { Sale } from '../../../domain/sales/entities/sale.entity';
 import { SaleItem } from '../../../domain/sales/entities/sale-item.entity';
 import { StockMovement, StockMovementType } from '../../../domain/sales/entities/stock-movement.entity';
 import { RequestUser } from '../../../infrastructure/security/jwt.strategy';
 
 /**
- * Create Sale Use Case
- * Creates a sale and updates product stock
+ * Update Sale Use Case
+ * Updates a sale and adjusts product stock accordingly
  */
 @Injectable()
-export class CreateSaleUseCase {
+export class UpdateSaleUseCase {
   constructor(
     @Inject('IProductRepository')
     private readonly productRepository: IProductRepository,
@@ -32,51 +32,46 @@ export class CreateSaleUseCase {
   ) {}
 
   async execute(
-    dto: CreateSaleDto,
+    id: string,
+    dto: UpdateSaleDto,
     currentUser: RequestUser,
   ): Promise<SaleResponseDto> {
     const tenantId = currentUser.tenantId;
     if (!tenantId) {
-      throw new ForbiddenException('Tenant ID is required to create sales');
+      throw new ForbiddenException('Tenant ID is required to update sales');
+    }
+
+    // Find existing sale
+    const existingSale = await this.saleRepository.findById(id);
+    if (!existingSale) {
+      throw new NotFoundException(`Sale with ID "${id}" not found`);
+    }
+
+    // Verify tenant ownership
+    if (existingSale.tenantId !== tenantId) {
+      throw new ForbiddenException('You do not have permission to update this sale');
     }
 
     if (!dto.items || dto.items.length === 0) {
       throw new BadRequestException('Sale must have at least one item');
     }
 
-    // Generate sale ID first (needed for sale items)
-    const saleId = uuidv4();
-
-    // Generate sale number (format: SALE-YYYYMMDD-XXX)
-    const date = new Date();
-    const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
-    let saleNumber = `SALE-${dateStr}-${Math.floor(Math.random() * 1000)
-      .toString()
-      .padStart(3, '0')}`;
-
-    // Check if sale number already exists (unlikely but possible)
-    let existingSale = await this.saleRepository.findBySaleNumber(
-      saleNumber,
-      tenantId,
-    );
-    let attempts = 0;
-    while (existingSale && attempts < 10) {
-      saleNumber = `SALE-${dateStr}-${Math.floor(Math.random() * 1000)
-        .toString()
-        .padStart(3, '0')}`;
-      existingSale = await this.saleRepository.findBySaleNumber(
-        saleNumber,
-        tenantId,
-      );
-      attempts++;
+    // Step 1: Reverse existing stock movements (add stock back)
+    for (const existingItem of existingSale.items) {
+      const product = await this.productRepository.findById(existingItem.productId);
+      if (product) {
+        product.increaseStock(existingItem.quantity);
+        await this.productRepository.update(product);
+      }
     }
 
-    // If still exists after retries, use UUID suffix
-    if (existingSale) {
-      saleNumber = `SALE-${dateStr}-${uuidv4().substring(0, 8).toUpperCase()}`;
+    // Step 2: Delete old stock movements
+    const oldMovements = await this.stockMovementRepository.findByReferenceId(id);
+    for (const movement of oldMovements) {
+      await this.stockMovementRepository.delete(movement.id);
     }
 
-    // Validate products and create sale items with sale ID
+    // Step 3: Validate new items and create sale items
     const saleItems: SaleItem[] = [];
     for (const itemDto of dto.items) {
       const product = await this.productRepository.findById(itemDto.productId);
@@ -105,17 +100,11 @@ export class CreateSaleUseCase {
         throw new BadRequestException(`Product "${product.name}" is not active`);
       }
 
-      // Create sale item with sale ID
+      // Create sale item
       const saleItemId = uuidv4();
-      
-      // Validate saleId is not empty
-      if (!saleId || saleId.trim().length === 0) {
-        throw new BadRequestException('Sale ID is required');
-      }
-      
       const saleItem = SaleItem.create(
         saleItemId,
-        saleId,
+        id,
         itemDto.productId,
         itemDto.quantity,
         itemDto.unitPrice,
@@ -124,21 +113,14 @@ export class CreateSaleUseCase {
       saleItems.push(saleItem);
     }
 
-    // Create sale
-    const sale = Sale.create(
-      saleId,
-      tenantId,
-      saleNumber,
-      saleItems,
-      dto.paymentMethod,
-      currentUser.userId,
-      dto.discountAmount || 0,
-    );
+    // Step 4: Update sale
+    existingSale.updateItems(saleItems);
+    existingSale.updatePaymentMethod(dto.paymentMethod);
+    existingSale.updateDiscount(dto.discountAmount || 0);
 
-    // Save sale
-    const savedSale = await this.saleRepository.save(sale);
+    const updatedSale = await this.saleRepository.update(existingSale);
 
-    // Update product stock and create stock movements
+    // Step 5: Update product stock and create new stock movements
     for (let i = 0; i < dto.items.length; i++) {
       const itemDto = dto.items[i];
       const product = await this.productRepository.findById(itemDto.productId);
@@ -158,8 +140,8 @@ export class CreateSaleUseCase {
         itemDto.unitPrice,
         currentUser.userId,
         new Date(),
-        saleId,
-        `Sale ${saleNumber}`,
+        id,
+        `Sale ${updatedSale.saleNumber}`,
       );
 
       await this.productRepository.update(product);
@@ -167,9 +149,9 @@ export class CreateSaleUseCase {
     }
 
     // Reload sale with items
-    const saleWithItems = await this.saleRepository.findById(saleId);
+    const saleWithItems = await this.saleRepository.findById(id);
     if (!saleWithItems) {
-      throw new Error('Failed to load sale after creation');
+      throw new Error('Failed to load sale after update');
     }
 
     // Get product names for response

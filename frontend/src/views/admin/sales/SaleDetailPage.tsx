@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   Box,
   Flex,
@@ -17,23 +17,41 @@ import {
   TableContainer,
   HStack,
   Divider,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MdArrowBack, MdPrint } from 'react-icons/md';
+import { MdArrowBack, MdPrint, MdEdit, MdDelete } from 'react-icons/md';
 import Card from 'components/local-grocery/Card';
 import { Sale, PaymentMethod } from 'types/sales';
 import salesService from 'services/sales.service';
+import { AuthContext } from 'contexts/AuthContext';
 
 const SaleDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
+  const authContext = useContext(AuthContext);
   const [sale, setSale] = useState<Sale | null>(null);
   const [loading, setLoading] = useState(true);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const cancelRef = React.useRef<HTMLButtonElement>(null);
 
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const brandColor = useColorModeValue('brand.500', 'brand.400');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
+
+  // Safe role check
+  const hasRole = (role: string): boolean => {
+    if (!authContext?.user) return false;
+    return authContext.user.roles.includes(role);
+  };
+  const canEdit = hasRole('TenantAdmin') || hasRole('SuperAdmin');
 
   useEffect(() => {
     if (id) {
@@ -108,13 +126,31 @@ const SaleDetailPage: React.FC = () => {
               Sale Details
             </Heading>
           </HStack>
-          <Button
-            leftIcon={<MdPrint />}
-            colorScheme="brand"
-            onClick={handlePrint}
-          >
-            Print Invoice
-          </Button>
+          <HStack spacing="10px">
+            <Button
+              leftIcon={<MdEdit />}
+              colorScheme="blue"
+              onClick={() => navigate(`/admin/sales/${id}/edit`)}
+              isDisabled={!canEdit}
+            >
+              Edit
+            </Button>
+            <Button
+              leftIcon={<MdDelete />}
+              colorScheme="red"
+              onClick={onOpen}
+              isDisabled={!canEdit}
+            >
+              Delete
+            </Button>
+            <Button
+              leftIcon={<MdPrint />}
+              colorScheme="brand"
+              onClick={handlePrint}
+            >
+              Print Invoice
+            </Button>
+          </HStack>
         </Flex>
 
         {/* Sale Information Card */}
@@ -262,6 +298,58 @@ const SaleDetailPage: React.FC = () => {
           }
         `}
       </style>
+
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Sale
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Are you sure you want to delete sale <strong>{sale?.saleNumber}</strong>? This
+              will cancel the sale and restore stock quantities. This action cannot be undone.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onClose}>
+                Cancel
+              </Button>
+              <Button
+                colorScheme="red"
+                onClick={async () => {
+                  if (!sale) return;
+                  try {
+                    await salesService.deleteSale(sale.id);
+                    toast({
+                      title: 'Success',
+                      description: 'Sale deleted successfully',
+                      status: 'success',
+                      duration: 3000,
+                      isClosable: true,
+                    });
+                    onClose();
+                    navigate('/admin/sales');
+                  } catch (error: any) {
+                    toast({
+                      title: 'Error',
+                      description: error.response?.data?.message || 'Failed to delete sale',
+                      status: 'error',
+                      duration: 5000,
+                      isClosable: true,
+                    });
+                  }
+                }}
+                ml={3}
+              >
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 };

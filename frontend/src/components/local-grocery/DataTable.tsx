@@ -94,8 +94,8 @@ export function DataTable<T extends Record<string, any>>({
 
   return (
     <Card>
-      <TableContainer>
-        <Table variant="simple">
+      <TableContainer overflowX="auto">
+        <Table variant="simple" size="md">
           <Thead>
             <Tr>
               {columns.map((column, index) => (
@@ -104,6 +104,7 @@ export function DataTable<T extends Record<string, any>>({
                   color={textColor}
                   borderColor={borderColor}
                   isNumeric={column.isNumeric}
+                  whiteSpace="nowrap"
                 >
                   {column.header}
                 </Th>
@@ -114,12 +115,44 @@ export function DataTable<T extends Record<string, any>>({
             {data.map((row, rowIndex) => (
               <Tr
                 key={rowIndex}
-                onClick={() => onRowClick?.(row)}
+                onClick={onRowClick ? (e) => {
+                  // Only trigger row click if the click target is not an interactive element
+                  const target = e.target as HTMLElement;
+                  const isInteractiveElement = 
+                    target.tagName === 'BUTTON' ||
+                    target.tagName === 'INPUT' ||
+                    target.tagName === 'A' ||
+                    target.tagName === 'LABEL' ||
+                    target.tagName === 'SPAN' ||
+                    target.closest('button') !== null ||
+                    target.closest('input') !== null ||
+                    target.closest('a') !== null ||
+                    target.closest('label') !== null ||
+                    target.closest('[role="button"]') !== null ||
+                    target.closest('[role="switch"]') !== null ||
+                    target.closest('[role="checkbox"]') !== null ||
+                    target.closest('.chakra-switch') !== null ||
+                    target.closest('.chakra-button') !== null ||
+                    target.closest('[data-cursor-element-id]')?.getAttribute('data-cursor-element-id')?.includes('switch') ||
+                    target.closest('[data-cursor-element-id]')?.getAttribute('data-cursor-element-id')?.includes('button');
+                  
+                  if (!isInteractiveElement) {
+                    onRowClick(row);
+                  } else {
+                    // Always stop propagation for interactive elements
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }
+                } : undefined}
                 cursor={onRowClick ? 'pointer' : 'default'}
                 _hover={onRowClick ? { bg: hoverBg } : {}}
               >
                 {columns.map((column, colIndex) => (
-                  <Td key={colIndex} borderColor={borderColor}>
+                  <Td 
+                    key={colIndex} 
+                    borderColor={borderColor}
+                    whiteSpace="nowrap"
+                  >
                     {renderCell(row, column)}
                   </Td>
                 ))}

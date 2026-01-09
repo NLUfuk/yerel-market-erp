@@ -44,6 +44,10 @@ export class SaleItemEntity {
   lineTotal: number;
 
   toDomain(): SaleItem {
+    // Ensure saleId exists before creating domain entity
+    if (!this.saleId) {
+      throw new Error(`SaleItem ${this.id} has no saleId`);
+    }
     return SaleItem.create(
       this.id,
       this.saleId,

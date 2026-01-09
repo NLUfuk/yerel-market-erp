@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SalesController } from './sales.controller';
 import { CreateSaleUseCase } from '../../application/sales/use-cases/create-sale.usecase';
+import { UpdateSaleUseCase } from '../../application/sales/use-cases/update-sale.usecase';
+import { DeleteSaleUseCase } from '../../application/sales/use-cases/delete-sale.usecase';
 import { ListSalesUseCase } from '../../application/sales/use-cases/list-sales.usecase';
 import { GetSaleUseCase } from '../../application/sales/use-cases/get-sale.usecase';
 import { SaleRepository } from '../../infrastructure/persistence/typeorm/repositories/sale.typeorm-repo';
@@ -28,6 +30,8 @@ import { ProductEntity } from '../../infrastructure/persistence/typeorm/entities
   controllers: [SalesController],
   providers: [
     CreateSaleUseCase,
+    UpdateSaleUseCase,
+    DeleteSaleUseCase,
     ListSalesUseCase,
     GetSaleUseCase,
     {

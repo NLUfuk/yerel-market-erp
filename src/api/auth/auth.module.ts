@@ -6,6 +6,7 @@ import { getAuthConfig } from '../../infrastructure/config/auth.config';
 import { AuthController } from './auth.controller';
 import { LoginUseCase } from '../../application/auth/use-cases/login.usecase';
 import { RegisterTenantUseCase } from '../../application/auth/use-cases/register-tenant.usecase';
+import { ImpersonateUserUseCase } from '../../application/auth/use-cases/impersonate-user.usecase';
 import { JwtStrategy } from '../../infrastructure/security/jwt.strategy';
 import { UserRepository } from '../../infrastructure/persistence/typeorm/repositories/user.typeorm-repo';
 import { TenantRepository } from '../../infrastructure/persistence/typeorm/repositories/tenant.typeorm-repo';
@@ -39,6 +40,7 @@ import { UserRoleEntity } from '../../infrastructure/persistence/typeorm/entitie
     JwtStrategy,
     LoginUseCase,
     RegisterTenantUseCase,
+    ImpersonateUserUseCase,
     {
       provide: 'IUserRepository',
       useClass: UserRepository,

@@ -10,9 +10,17 @@ import {
   Text,
   Input,
   HStack,
+  Select,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { MdAdd } from 'react-icons/md';
+import { MdAdd, MdEdit, MdDelete } from 'react-icons/md';
 import { DataTable, Pagination } from 'components/local-grocery';
 import { Sale, PaymentMethod } from 'types/sales';
 import salesService from 'services/sales.service';
@@ -30,16 +38,19 @@ const SalesListPage: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('');
+  const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const cancelRef = React.useRef<HTMLButtonElement>(null);
 
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const brandColor = useColorModeValue('brand.500', 'brand.400');
-  
-  // Safe role check
+
   const hasRole = (role: string): boolean => {
     if (!authContext?.user) return false;
     return authContext.user.roles.includes(role);
   };
-  const canCreate = hasRole('TenantAdmin') || hasRole('Cashier');
+  const canEdit = hasRole('TenantAdmin') || hasRole('Cashier');
 
   useEffect(() => {
     loadSales();
@@ -57,6 +68,9 @@ const SalesListPage: React.FC = () => {
       }
       if (endDate) {
         params.endDate = endDate;
+      }
+      if (paymentMethodFilter) {
+        params.paymentMethod = paymentMethodFilter;
       }
       const response = await salesService.getSales(params);
       setSales(response.data);
@@ -152,6 +166,40 @@ const SalesListPage: React.FC = () => {
         </Text>
       ),
     },
+    {
+      header: 'Actions',
+      accessor: (sale: Sale) => (
+        <HStack spacing="10px">
+          <Button
+            size="sm"
+            leftIcon={<MdEdit />}
+            colorScheme="blue"
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/admin/sales/${sale.id}/edit`);
+            }}
+            isDisabled={!canEdit}
+          >
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            leftIcon={<MdDelete />}
+            colorScheme="red"
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSaleToDelete(sale);
+              onOpen();
+            }}
+            isDisabled={!canEdit}
+          >
+            Delete
+          </Button>
+        </HStack>
+      ),
+    },
   ];
 
   const totalPages = Math.ceil(total / limit);
@@ -164,15 +212,13 @@ const SalesListPage: React.FC = () => {
           <Heading color={textColor} fontSize="2xl" fontWeight="700">
             Sales
           </Heading>
-          {canCreate && (
-            <Button
-              leftIcon={<MdAdd />}
-              colorScheme="brand"
-              onClick={() => navigate('/admin/sales/new')}
-            >
-              New Sale
-            </Button>
-          )}
+          <Button
+            leftIcon={<MdAdd />}
+            colorScheme="brand"
+            onClick={() => navigate('/admin/sales/new')}
+          >
+            New Sale
+          </Button>
         </Flex>
 
         {/* Filters */}
@@ -201,11 +247,29 @@ const SalesListPage: React.FC = () => {
               w="200px"
             />
           </Box>
+          <Box>
+            <Text fontSize="sm" mb="5px" color={textColor}>
+              Payment Method
+            </Text>
+            <Select
+              placeholder="All Methods"
+              value={paymentMethodFilter}
+              onChange={(e) => setPaymentMethodFilter(e.target.value)}
+              size="md"
+              w="150px"
+            >
+              <option value="">All</option>
+              <option value={PaymentMethod.CASH}>Cash</option>
+              <option value={PaymentMethod.CARD}>Card</option>
+              <option value={PaymentMethod.MIXED}>Mixed</option>
+            </Select>
+          </Box>
           <Button
             variant="outline"
             onClick={() => {
               setStartDate('');
               setEndDate('');
+              setPaymentMethodFilter('');
             }}
           >
             Clear Filters
@@ -236,6 +300,59 @@ const SalesListPage: React.FC = () => {
           />
         )}
       </Flex>
+
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Sale
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Are you sure you want to delete sale <strong>{saleToDelete?.saleNumber}</strong>?
+              This will cancel the sale and restore stock quantities. This action cannot be undone.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onClose}>
+                Cancel
+              </Button>
+              <Button
+                colorScheme="red"
+                onClick={async () => {
+                  if (!saleToDelete) return;
+                  try {
+                    await salesService.deleteSale(saleToDelete.id);
+                    toast({
+                      title: 'Success',
+                      description: 'Sale deleted successfully',
+                      status: 'success',
+                      duration: 3000,
+                      isClosable: true,
+                    });
+                    onClose();
+                    setSaleToDelete(null);
+                    loadSales();
+                  } catch (error: any) {
+                    toast({
+                      title: 'Error',
+                      description: error.response?.data?.message || 'Failed to delete sale',
+                      status: 'error',
+                      duration: 5000,
+                      isClosable: true,
+                    });
+                  }
+                }}
+                ml={3}
+              >
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 };

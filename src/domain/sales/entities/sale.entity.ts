@@ -79,6 +79,21 @@ export class Sale {
     this.recalculateTotals();
   }
 
+  updateItems(items: SaleItem[]): void {
+    if (items.length === 0) {
+      throw new Error('Sale must have at least one item');
+    }
+    this.items = items;
+    this.recalculateTotals();
+  }
+
+  updatePaymentMethod(paymentMethod: PaymentMethod): void {
+    if (!Object.values(PaymentMethod).includes(paymentMethod)) {
+      throw new Error('Invalid payment method');
+    }
+    this.paymentMethod = paymentMethod;
+  }
+
   private recalculateTotals(): void {
     this.totalAmount = this.items.reduce((sum, item) => sum + item.lineTotal, 0);
     this.finalAmount = this.totalAmount - this.discountAmount;

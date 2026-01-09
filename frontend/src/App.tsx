@@ -4,6 +4,7 @@ import { ChakraProvider } from '@chakra-ui/react';
 import { useState } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import initialTheme from './theme/theme';
 import AuthLayout from './layouts/auth';
 import AdminLayout from './layouts/admin/index';
@@ -13,25 +14,27 @@ function App() {
 
   return (
     <ChakraProvider theme={currentTheme}>
-      <AuthProvider>
-        <Routes>
-          {/* Public routes */}
-          <Route path="auth/*" element={<AuthLayout />} />
-          
-          {/* Protected admin routes */}
-          <Route
-            path="admin/*"
-            element={
-              <ProtectedRoute>
-                <AdminLayout theme={currentTheme} setTheme={() => {}} />
-              </ProtectedRoute>
-            }
-          />
-          
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
-        </Routes>
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="auth/*" element={<AuthLayout />} />
+            
+            {/* Protected admin routes */}
+            <Route
+              path="admin/*"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout theme={currentTheme} setTheme={() => {}} />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Default redirect */}
+            <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+          </Routes>
+        </AuthProvider>
+      </ErrorBoundary>
     </ChakraProvider>
   );
 }

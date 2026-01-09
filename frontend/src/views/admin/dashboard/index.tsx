@@ -60,7 +60,8 @@ function Dashboard() {
       setTodayOrders(salesSummary.totalOrders);
 
       // Load products
-      const productsResponse = await productsService.getProducts({ limit: 1000 });
+      // Backend limit max 100, fetch first page for dashboard
+      const productsResponse = await productsService.getProducts({ page: 1, limit: 100 });
       const products = productsResponse.data;
       setTotalProducts(products.length);
       

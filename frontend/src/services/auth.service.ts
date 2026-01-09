@@ -87,6 +87,74 @@ class AuthService {
     localStorage.setItem('token', authResponse.accessToken);
     localStorage.setItem('user', JSON.stringify(authResponse.user));
   }
+
+  /**
+   * Impersonate a user (SuperAdmin only)
+   */
+  async impersonate(userId: string): Promise<AuthResponse> {
+    // Store original user and token before impersonating
+    const originalUser = this.getCurrentUser();
+    const originalToken = this.getToken();
+    if (originalUser) {
+      localStorage.setItem('originalUser', JSON.stringify(originalUser));
+    }
+    if (originalToken) {
+      localStorage.setItem('originalToken', originalToken);
+    }
+
+    const response = await apiClient.post<AuthResponse>(`/auth/impersonate/${userId}`);
+    const authResponse = response.data;
+    this.saveAuthData(authResponse);
+    return authResponse;
+  }
+
+  /**
+   * Get original user (before impersonation)
+   */
+  getOriginalUser(): User | null {
+    const originalUserStr = localStorage.getItem('originalUser');
+    if (!originalUserStr) return null;
+    try {
+      return JSON.parse(originalUserStr);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get original token (before impersonation)
+   */
+  getOriginalToken(): string | null {
+    return localStorage.getItem('originalToken');
+  }
+
+  /**
+   * Check if currently impersonating
+   */
+  isImpersonating(): boolean {
+    return !!this.getOriginalUser();
+  }
+
+  /**
+   * Stop impersonating and restore original user session
+   */
+  stopImpersonating(): void {
+    const originalUser = this.getOriginalUser();
+    const originalToken = this.getOriginalToken();
+    
+    if (originalUser && originalToken) {
+      // Restore original token and user
+      localStorage.setItem('token', originalToken);
+      localStorage.setItem('user', JSON.stringify(originalUser));
+      // Clear impersonation data
+      localStorage.removeItem('originalUser');
+      localStorage.removeItem('originalToken');
+    } else {
+      // If no original data, just clear impersonation state
+      localStorage.removeItem('originalUser');
+      localStorage.removeItem('originalToken');
+    }
+  }
 }
 
 export const authService = new AuthService();

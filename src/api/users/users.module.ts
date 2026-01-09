@@ -4,6 +4,7 @@ import { UsersController } from './users.controller';
 import { CreateUserUseCase } from '../../application/users/use-cases/create-user.usecase';
 import { UpdateUserUseCase } from '../../application/users/use-cases/update-user.usecase';
 import { ListUsersUseCase } from '../../application/users/use-cases/list-users.usecase';
+import { GetUserUseCase } from '../../application/users/use-cases/get-user.usecase';
 import { AssignRoleUseCase } from '../../application/users/use-cases/assign-role.usecase';
 import { UserRepository } from '../../infrastructure/persistence/typeorm/repositories/user.typeorm-repo';
 import { RoleRepository } from '../../infrastructure/persistence/typeorm/repositories/user.typeorm-repo';
@@ -25,6 +26,7 @@ import { UserRoleEntity } from '../../infrastructure/persistence/typeorm/entitie
     CreateUserUseCase,
     UpdateUserUseCase,
     ListUsersUseCase,
+    GetUserUseCase,
     AssignRoleUseCase,
     {
       provide: 'IUserRepository',

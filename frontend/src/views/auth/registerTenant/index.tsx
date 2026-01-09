@@ -23,7 +23,6 @@ import { MdOutlineRemoveRedEye } from 'react-icons/md';
 import { RiEyeCloseLine } from 'react-icons/ri';
 import { HSeparator } from 'components/separator/Separator';
 import DefaultAuth from 'layouts/auth/Default';
-import illustration from 'assets/img/auth/auth.png';
 import authService from 'services/auth.service';
 
 interface RegisterTenantFormData {
@@ -129,7 +128,7 @@ function RegisterTenant() {
   const handleClick = () => setShow(!show);
 
   return (
-    <DefaultAuth illustrationBackground={illustration} image={illustration}>
+    <DefaultAuth>
       <Flex
         maxW={{ base: '100%', md: 'max-content' }}
         w="100%"

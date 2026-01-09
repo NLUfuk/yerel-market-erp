@@ -10,6 +10,15 @@ import {
   Select,
   HStack,
   Text,
+  Switch,
+  IconButton,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { MdAdd, MdEdit, MdDelete } from 'react-icons/md';
@@ -31,6 +40,9 @@ const ProductsListPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const cancelRef = React.useRef<HTMLButtonElement>(null);
 
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const brandColor = useColorModeValue('brand.500', 'brand.400');
@@ -40,7 +52,7 @@ const ProductsListPage: React.FC = () => {
     if (!authContext?.user) return false;
     return authContext.user.roles.includes(role);
   };
-  const canEdit = hasRole('TenantAdmin');
+  const canEdit = hasRole('TenantAdmin') || hasRole('SuperAdmin');
 
   useEffect(() => {
     loadCategories();
@@ -95,16 +107,45 @@ const ProductsListPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (product: Product) => {
-    if (!window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
-      return;
-    }
+  const handleDeleteClick = (product: Product) => {
+    setProductToDelete(product);
+    onOpen();
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!productToDelete) return;
 
     try {
-      await productsService.deleteProduct(product.id);
+      await productsService.deleteProduct(productToDelete.id);
       toast({
         title: 'Success',
         description: 'Product deleted successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      setProductToDelete(null);
+      onClose();
+      loadProducts();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to delete product',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleToggleActive = async (product: Product) => {
+    try {
+      await productsService.updateProduct(product.id, {
+        isActive: !product.isActive,
+      });
+      toast({
+        title: 'Success',
+        description: `Product ${!product.isActive ? 'activated' : 'deactivated'} successfully`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -113,7 +154,7 @@ const ProductsListPage: React.FC = () => {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete product',
+        description: error.response?.data?.message || 'Failed to update product status',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -163,44 +204,72 @@ const ProductsListPage: React.FC = () => {
       accessor: (product: Product) => {
         const status = getStockStatus(product.stockQuantity, product.minStockLevel);
         return (
-          <HStack>
+          <HStack spacing={2}>
             <Text>{product.stockQuantity}</Text>
             <Badge colorScheme={status.color}>{status.label}</Badge>
+            {canEdit && (
+              <Button
+                size="xs"
+                colorScheme="orange"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/admin/stock/adjust/${product.id}`);
+                }}
+              >
+                Adjust
+              </Button>
+            )}
           </HStack>
         );
       },
-      isNumeric: true,
+      isNumeric: false,
     },
     {
       header: 'Status',
       accessor: (product: Product) => (
-        <Badge colorScheme={product.isActive ? 'green' : 'gray'}>
-          {product.isActive ? 'Active' : 'Inactive'}
-        </Badge>
+        <HStack spacing={3}>
+          <Switch
+            isChecked={product.isActive}
+            onChange={() => handleToggleActive(product)}
+            colorScheme="green"
+            isDisabled={!canEdit}
+            size="md"
+          />
+          <Badge colorScheme={product.isActive ? 'green' : 'gray'} fontSize="xs">
+            {product.isActive ? 'Active' : 'Inactive'}
+          </Badge>
+        </HStack>
       ),
     },
     {
       header: 'Actions',
       accessor: (product: Product) => (
         <HStack spacing={2}>
-          <Button
+          <IconButton
+            aria-label="Edit product"
+            icon={<MdEdit />}
             size="sm"
-            variant="ghost"
+            variant="outline"
             colorScheme="blue"
-            onClick={() => navigate(`/admin/products/${product.id}`)}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/admin/products/${product.id}`);
+            }}
             isDisabled={!canEdit}
-          >
-            <MdEdit />
-          </Button>
-          <Button
+          />
+          <IconButton
+            aria-label="Delete product"
+            icon={<MdDelete />}
             size="sm"
-            variant="ghost"
+            variant="outline"
             colorScheme="red"
-            onClick={() => handleDelete(product)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteClick(product);
+            }}
             isDisabled={!canEdit}
-          >
-            <MdDelete />
-          </Button>
+          />
         </HStack>
       ),
     },
@@ -265,6 +334,33 @@ const ProductsListPage: React.FC = () => {
           onItemsPerPageChange={setLimit}
         />
       )}
+
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Product
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Are you sure you want to delete <strong>{productToDelete?.name}</strong>? The
+              product will be deactivated and hidden from new sales, but existing sales history
+              will be preserved.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onClose}>
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={handleDeleteConfirm} ml={3}>
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 };

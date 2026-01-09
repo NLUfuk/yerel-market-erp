@@ -22,7 +22,6 @@ import { MdOutlineRemoveRedEye } from 'react-icons/md';
 import { RiEyeCloseLine } from 'react-icons/ri';
 import { HSeparator } from 'components/separator/Separator';
 import DefaultAuth from 'layouts/auth/Default';
-import illustration from 'assets/img/auth/auth.png';
 import { AuthContext } from 'contexts/AuthContext';
 import authService from 'services/auth.service';
 
@@ -98,21 +97,19 @@ function SignIn() {
   const handleClick = () => setShow(!show);
 
   return (
-    <DefaultAuth illustrationBackground={illustration} image={illustration}>
+    <DefaultAuth>
       <Flex
         maxW={{ base: '100%', md: 'max-content' }}
         w="100%"
-        mx={{ base: 'auto', lg: '0px' }}
-        me="auto"
+        mx="auto"
         h="100%"
-        alignItems="start"
+        alignItems="center"
         justifyContent="center"
         mb={{ base: '30px', md: '60px' }}
         px={{ base: '25px', md: '0px' }}
-        mt={{ base: '40px', md: '14vh' }}
         flexDirection="column"
       >
-        <Box me="auto">
+        <Box mx="auto" textAlign="center">
           <Heading color={textColor} fontSize="36px" mb="10px">
             Sign In
           </Heading>
@@ -133,8 +130,7 @@ function SignIn() {
           maxW="100%"
           background="transparent"
           borderRadius="15px"
-          mx={{ base: 'auto', lg: 'unset' }}
-          me="auto"
+          mx="auto"
           mb={{ base: '20px', md: 'auto' }}
         >
           <Flex align="center" mb="25px">

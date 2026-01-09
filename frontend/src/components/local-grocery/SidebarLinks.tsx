@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Box, Flex, HStack, Text, useColorModeValue } from '@chakra-ui/react';
 import { RouteType } from 'routes';
+import { AuthContext } from 'contexts/AuthContext';
 
 interface SidebarLinksProps {
   routes: RouteType[];
@@ -13,6 +14,7 @@ interface SidebarLinksProps {
  */
 export const SidebarLinks: React.FC<SidebarLinksProps> = ({ routes }) => {
   const location = useLocation();
+  const authContext = useContext(AuthContext);
   const activeColor = useColorModeValue('gray.700', 'white');
   const inactiveColor = useColorModeValue('secondaryGray.600', 'secondaryGray.600');
   const activeIcon = useColorModeValue('brand.500', 'white');
@@ -24,54 +26,69 @@ export const SidebarLinks: React.FC<SidebarLinksProps> = ({ routes }) => {
     return location.pathname.includes(routeName);
   };
 
+  // Check if user has permission to see this route
+  const canAccessRoute = (route: RouteType): boolean => {
+    if (!route.allowedRoles || route.allowedRoles.length === 0) {
+      return true; // No restrictions
+    }
+    if (!authContext?.user) {
+      return false;
+    }
+    // Check if user has any of the required roles
+    const userRoles = authContext.user.roles || [];
+    return route.allowedRoles.some((role) => userRoles.includes(role));
+  };
+
   // This function creates the links from the secondary accordions
   const createLinks = (routes: RouteType[]): React.ReactNode[] => {
-    return routes.map((route, index) => {
-      if (route.collapse && route.items) {
-        return (
-          <React.Fragment key={index}>
-            <Text
-              fontSize="md"
-              color={activeColor}
-              fontWeight="bold"
-              mx="auto"
-              ps={{
-                sm: '10px',
-                xl: '16px',
-              }}
-              pt="18px"
-              pb="12px"
-            >
-              {route.name}
-            </Text>
-            {createLinks(route.items)}
-          </React.Fragment>
-        );
-      } else if (route.category && route.items) {
-        return (
-          <React.Fragment key={index}>
-            <Text
-              fontSize="md"
-              color={activeColor}
-              fontWeight="bold"
-              mx="auto"
-              ps={{
-                sm: '10px',
-                xl: '16px',
-              }}
-              pt="18px"
-              pb="12px"
-            >
-              {route.name}
-            </Text>
-            {createLinks(route.items)}
-          </React.Fragment>
-        );
-      } else if (
-        route.layout === '/admin' ||
-        route.layout === '/auth' ||
-        route.layout === '/rtl'
-      ) {
+    return routes
+      .filter((route) => canAccessRoute(route))
+      .map((route, index) => {
+        if (route.collapse && route.items) {
+          return (
+            <React.Fragment key={index}>
+              <Text
+                fontSize="md"
+                color={activeColor}
+                fontWeight="bold"
+                mx="auto"
+                ps={{
+                  sm: '10px',
+                  xl: '16px',
+                }}
+                pt="18px"
+                pb="12px"
+              >
+                {route.name}
+              </Text>
+              {createLinks(route.items || [])}
+            </React.Fragment>
+          );
+        } else if (route.category && route.items) {
+          return (
+            <React.Fragment key={index}>
+              <Text
+                fontSize="md"
+                color={activeColor}
+                fontWeight="bold"
+                mx="auto"
+                ps={{
+                  sm: '10px',
+                  xl: '16px',
+                }}
+                pt="18px"
+                pb="12px"
+              >
+                {route.name}
+              </Text>
+              {createLinks(route.items || [])}
+            </React.Fragment>
+          );
+        } else if (
+          route.layout === '/admin' ||
+          route.layout === '/auth' ||
+          route.layout === '/rtl'
+        ) {
         return (
           <NavLink key={index} to={route.layout + route.path}>
             {route.icon ? (

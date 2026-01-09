@@ -23,15 +23,13 @@ import {
   TableContainer,
   HStack,
 } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { MdAdd, MdDelete, MdShoppingCart, MdRemove } from 'react-icons/md';
 import Card from 'components/local-grocery/Card';
 import { Product } from 'types/products';
-import { PaymentMethod, CreateSaleItemRequest, CreateSaleRequest } from 'types/sales';
+import { PaymentMethod, CreateSaleItemRequest, UpdateSaleRequest } from 'types/sales';
 import productsService from 'services/products.service';
 import salesService from 'services/sales.service';
-import { useContext } from 'react';
-import { AuthContext } from 'contexts/AuthContext';
 
 interface SaleItemForm {
   productId: string;
@@ -40,11 +38,12 @@ interface SaleItemForm {
   discountAmount: number;
 }
 
-const CreateSalePage: React.FC = () => {
+const EditSalePage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
-  const authContext = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
+  const [loadingSale, setLoadingSale] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [items, setItems] = useState<SaleItemForm[]>([]);
   const [selectedProductId, setSelectedProductId] = useState('');
@@ -56,7 +55,10 @@ const CreateSalePage: React.FC = () => {
 
   useEffect(() => {
     loadProducts();
-  }, []);
+    if (id) {
+      loadSale();
+    }
+  }, [id]);
 
   const loadProducts = async () => {
     try {
@@ -72,7 +74,6 @@ const CreateSalePage: React.FC = () => {
         page++;
       }
       
-      // Filter only active products
       const activeProducts = allProducts.filter((p) => p.isActive);
       setProducts(activeProducts);
     } catch (error: any) {
@@ -83,6 +84,38 @@ const CreateSalePage: React.FC = () => {
         duration: 5000,
         isClosable: true,
       });
+    }
+  };
+
+  const loadSale = async () => {
+    if (!id) return;
+
+    try {
+      setLoadingSale(true);
+      const sale = await salesService.getSale(id);
+      
+      // Convert sale items to form format
+      const formItems: SaleItemForm[] = sale.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discountAmount: item.discountAmount,
+      }));
+
+      setItems(formItems);
+      setPaymentMethod(sale.paymentMethod);
+      setTotalDiscount(sale.discountAmount);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to load sale',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      navigate('/admin/sales');
+    } finally {
+      setLoadingSale(false);
     }
   };
 
@@ -169,9 +202,11 @@ const CreateSalePage: React.FC = () => {
       return;
     }
 
+    if (!id) return;
+
     setLoading(true);
     try {
-      const saleData: CreateSaleRequest = {
+      const saleData: UpdateSaleRequest = {
         items: items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -182,10 +217,10 @@ const CreateSalePage: React.FC = () => {
         discountAmount: totalDiscount > 0 ? totalDiscount : undefined,
       };
 
-      await salesService.createSale(saleData);
+      await salesService.updateSale(id, saleData);
       toast({
         title: 'Success',
-        description: 'Sale created successfully',
+        description: 'Sale updated successfully',
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -194,7 +229,7 @@ const CreateSalePage: React.FC = () => {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create sale',
+        description: error.response?.data?.message || 'Failed to update sale',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -208,12 +243,20 @@ const CreateSalePage: React.FC = () => {
     return products.find((p) => p.id === productId)?.name || 'Unknown';
   };
 
+  if (loadingSale) {
+    return (
+      <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+        <Text>Loading sale...</Text>
+      </Box>
+    );
+  }
+
   return (
     <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
       <Flex direction="column" gap="20px">
         {/* Header */}
         <Heading color={textColor} fontSize="2xl" fontWeight="700">
-          New Sale
+          Edit Sale
         </Heading>
 
         <Flex direction={{ base: 'column', lg: 'row' }} gap="20px">
@@ -421,11 +464,11 @@ const CreateSalePage: React.FC = () => {
                     size="lg"
                     onClick={handleSubmit}
                     isLoading={loading}
-                    loadingText="Processing..."
+                    loadingText="Updating..."
                     isDisabled={items.length === 0 || calculateTotal() <= 0}
                     leftIcon={<MdShoppingCart />}
                   >
-                    Complete Sale
+                    Update Sale
                   </Button>
                   <Button
                     variant="outline"
@@ -444,5 +487,5 @@ const CreateSalePage: React.FC = () => {
   );
 };
 
-export default CreateSalePage;
+export default EditSalePage;
 

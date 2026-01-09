@@ -6,11 +6,17 @@ import {
   MdInventory,
   MdBarChart,
   MdPerson,
+  MdPeople,
+  MdBusiness,
+  MdSwapHoriz,
 } from 'react-icons/md';
 
 // Import actual pages
 import ProductsListPage from './views/admin/products/ProductsListPage';
 import ReportsPage from './views/admin/reports/ReportsPage';
+import UsersListPage from './views/admin/users/UsersListPage';
+import TenantsListPage from './views/admin/tenants/TenantsListPage';
+import StockMovementsListPage from './views/admin/stock/StockMovementsListPage';
 
 // Placeholder components - will be created later
 const Sales = () => <div>Sales</div>;
@@ -26,6 +32,7 @@ export interface RouteType {
   collapse?: boolean;
   category?: string;
   items?: RouteType[];
+  allowedRoles?: string[];
 }
 
 const routes: RouteType[] = [
@@ -51,6 +58,14 @@ const routes: RouteType[] = [
     component: Sales,
   },
   {
+    name: 'Stock',
+    layout: '/admin',
+    path: '/stock/movements',
+    icon: <Icon as={MdSwapHoriz} width="20px" height="20px" color="inherit" />,
+    component: StockMovementsListPage,
+    allowedRoles: ['SuperAdmin', 'TenantAdmin', 'Cashier'],
+  },
+  {
     name: 'Reports',
     layout: '/admin',
     path: '/reports',
@@ -58,11 +73,26 @@ const routes: RouteType[] = [
     component: ReportsPage,
   },
   {
+    name: 'Users',
+    layout: '/admin',
+    path: '/users',
+    icon: <Icon as={MdPeople} width="20px" height="20px" color="inherit" />,
+    component: UsersListPage,
+  },
+  {
     name: 'Profile',
     layout: '/admin',
     path: '/profile',
     icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
     component: Profile,
+  },
+  {
+    name: 'Tenants',
+    layout: '/admin',
+    path: '/tenants',
+    icon: <Icon as={MdBusiness} width="20px" height="20px" color="inherit" />,
+    component: TenantsListPage,
+    allowedRoles: ['SuperAdmin'],
   },
 ];
 

@@ -16,18 +16,33 @@ export class SaleItem {
   }
 
   private validate(): void {
-    if (!this.saleId || this.saleId.trim().length === 0) {
+    // Validate saleId - check if it exists and is not empty
+    if (!this.saleId) {
       throw new Error('Sale ID is required');
     }
-    if (!this.productId || this.productId.trim().length === 0) {
+    if (typeof this.saleId === 'string' && this.saleId.trim().length === 0) {
+      throw new Error('Sale ID cannot be empty');
+    }
+    
+    // Validate productId
+    if (!this.productId) {
       throw new Error('Product ID is required');
     }
+    if (typeof this.productId === 'string' && this.productId.trim().length === 0) {
+      throw new Error('Product ID cannot be empty');
+    }
+    
+    // Validate quantity
     if (this.quantity <= 0) {
       throw new Error('Quantity must be greater than zero');
     }
+    
+    // Validate unitPrice
     if (this.unitPrice < 0) {
       throw new Error('Unit price cannot be negative');
     }
+    
+    // Validate discountAmount
     if (this.discountAmount < 0) {
       throw new Error('Discount amount cannot be negative');
     }

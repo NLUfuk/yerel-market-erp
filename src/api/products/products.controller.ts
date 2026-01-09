@@ -28,6 +28,7 @@ import { ListProductsUseCase } from '../../application/products/use-cases/list-p
 import { CreateCategoryUseCase } from '../../application/products/use-cases/create-category.usecase';
 import { UpdateCategoryUseCase } from '../../application/products/use-cases/update-category.usecase';
 import { DeleteCategoryUseCase } from '../../application/products/use-cases/delete-category.usecase';
+import { DeleteProductUseCase } from '../../application/products/use-cases/delete-product.usecase';
 import { ListCategoriesUseCase } from '../../application/products/use-cases/list-categories.usecase';
 import { Roles } from '../../infrastructure/security/decorators/roles.decorator';
 import { CurrentUser } from '../../infrastructure/security/decorators/current-user.decorator';
@@ -50,6 +51,7 @@ export class ProductsController {
     private readonly createCategoryUseCase: CreateCategoryUseCase,
     private readonly updateCategoryUseCase: UpdateCategoryUseCase,
     private readonly deleteCategoryUseCase: DeleteCategoryUseCase,
+    private readonly deleteProductUseCase: DeleteProductUseCase,
     private readonly listCategoriesUseCase: ListCategoriesUseCase,
   ) {}
 
@@ -96,6 +98,25 @@ export class ProductsController {
     @CurrentUser() user: RequestUser,
   ): Promise<ProductResponseDto> {
     return this.updateProductUseCase.execute(id, updateDto, user);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles('TenantAdmin')
+  @ApiOperation({ summary: 'Delete product (TenantAdmin only, soft delete)' })
+  @ApiResponse({
+    status: 204,
+    description: 'Product deleted successfully (deactivated)',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Product not found',
+  })
+  async delete(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestUser,
+  ): Promise<void> {
+    return this.deleteProductUseCase.execute(id, user);
   }
 
   @Post('categories')

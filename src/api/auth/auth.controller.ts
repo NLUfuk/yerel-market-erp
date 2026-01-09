@@ -1,11 +1,15 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Body, HttpCode, HttpStatus, Param } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { LoginUseCase } from '../../application/auth/use-cases/login.usecase';
 import { RegisterTenantUseCase } from '../../application/auth/use-cases/register-tenant.usecase';
+import { ImpersonateUserUseCase } from '../../application/auth/use-cases/impersonate-user.usecase';
 import { LoginDto } from '../../application/auth/dto/login.dto';
 import { RegisterTenantDto } from '../../application/auth/dto/register-tenant.dto';
 import { AuthResponseDto } from '../../application/auth/dto/auth-response.dto';
 import { Public } from '../../infrastructure/security/decorators/public.decorator';
+import { Roles } from '../../infrastructure/security/decorators/roles.decorator';
+import { CurrentUser } from '../../infrastructure/security/decorators/current-user.decorator';
+import type { RequestUser } from '../../infrastructure/security/jwt.strategy';
 
 /**
  * Auth Controller
@@ -17,6 +21,7 @@ export class AuthController {
   constructor(
     private readonly loginUseCase: LoginUseCase,
     private readonly registerTenantUseCase: RegisterTenantUseCase,
+    private readonly impersonateUserUseCase: ImpersonateUserUseCase,
   ) {}
 
   @Public()
@@ -47,6 +52,26 @@ export class AuthController {
     @Body() registerDto: RegisterTenantDto,
   ): Promise<AuthResponseDto> {
     return this.registerTenantUseCase.execute(registerDto);
+  }
+
+  @Post('impersonate/:userId')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @Roles('SuperAdmin')
+  @ApiOperation({ summary: 'Impersonate a user (SuperAdmin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Impersonation successful, returns new JWT token',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 403, description: 'Only SuperAdmin can impersonate users' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Cannot impersonate inactive user' })
+  async impersonate(
+    @Param('userId') userId: string,
+    @CurrentUser() currentUser: RequestUser,
+  ): Promise<AuthResponseDto> {
+    return this.impersonateUserUseCase.execute(userId, currentUser);
   }
 }
 

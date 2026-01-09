@@ -45,12 +45,19 @@ export interface CreateSaleRequest {
   discountAmount?: number;
 }
 
+export interface UpdateSaleRequest {
+  items: CreateSaleItemRequest[];
+  paymentMethod: PaymentMethod;
+  discountAmount?: number;
+}
+
 export interface ListSalesParams {
   page?: number;
   limit?: number;
   startDate?: string;
   endDate?: string;
   cashierId?: string;
+  paymentMethod?: PaymentMethod;
 }
 
 export interface PaginatedSalesResponse {

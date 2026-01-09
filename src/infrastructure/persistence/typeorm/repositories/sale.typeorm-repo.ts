@@ -137,5 +137,9 @@ export class StockMovementRepository implements IStockMovementRepository {
     });
     return entities.map((entity) => entity.toDomain());
   }
+
+  async delete(id: string): Promise<void> {
+    await this.repository.delete(id);
+  }
 }
 

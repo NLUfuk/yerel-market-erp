@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Delete,
   Body,
   Param,
   Query,
@@ -17,9 +19,12 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { CreateSaleDto } from '../../application/sales/dto/create-sale.dto';
+import { UpdateSaleDto } from '../../application/sales/dto/update-sale.dto';
 import { SaleResponseDto } from '../../application/sales/dto/sale-response.dto';
 import { PaginationDto } from '../../application/shared/dto/pagination.dto';
 import { CreateSaleUseCase } from '../../application/sales/use-cases/create-sale.usecase';
+import { UpdateSaleUseCase } from '../../application/sales/use-cases/update-sale.usecase';
+import { DeleteSaleUseCase } from '../../application/sales/use-cases/delete-sale.usecase';
 import { ListSalesUseCase } from '../../application/sales/use-cases/list-sales.usecase';
 import { GetSaleUseCase } from '../../application/sales/use-cases/get-sale.usecase';
 import { Roles } from '../../infrastructure/security/decorators/roles.decorator';
@@ -38,6 +43,8 @@ import type { RequestUser } from '../../infrastructure/security/jwt.strategy';
 export class SalesController {
   constructor(
     private readonly createSaleUseCase: CreateSaleUseCase,
+    private readonly updateSaleUseCase: UpdateSaleUseCase,
+    private readonly deleteSaleUseCase: DeleteSaleUseCase,
     private readonly listSalesUseCase: ListSalesUseCase,
     private readonly getSaleUseCase: GetSaleUseCase,
   ) {}
@@ -95,6 +102,45 @@ export class SalesController {
     @CurrentUser() user: RequestUser,
   ): Promise<SaleResponseDto> {
     return this.getSaleUseCase.execute(id, user);
+  }
+
+  @Put(':id')
+  @Roles('TenantAdmin', 'Cashier')
+  @ApiOperation({ summary: 'Update a sale' })
+  @ApiResponse({
+    status: 200,
+    description: 'Sale updated successfully',
+    type: SaleResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Sale not found',
+  })
+  async update(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateSaleDto,
+    @CurrentUser() user: RequestUser,
+  ): Promise<SaleResponseDto> {
+    return this.updateSaleUseCase.execute(id, updateDto, user);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles('TenantAdmin', 'Cashier')
+  @ApiOperation({ summary: 'Delete a sale' })
+  @ApiResponse({
+    status: 204,
+    description: 'Sale deleted successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Sale not found',
+  })
+  async delete(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestUser,
+  ): Promise<void> {
+    return this.deleteSaleUseCase.execute(id, user);
   }
 }
 

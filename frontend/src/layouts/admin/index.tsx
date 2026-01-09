@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Portal, Box, useDisclosure } from '@chakra-ui/react';
+import React, { useState, useContext } from 'react';
+import { Portal, Box, useDisclosure, Alert, AlertIcon, AlertTitle, AlertDescription, Button, HStack, Text } from '@chakra-ui/react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Footer, Navbar, Sidebar, SidebarResponsive } from 'components/local-grocery';
 import { SidebarContext } from 'contexts/SidebarContext';
+import { AuthContext } from 'contexts/AuthContext';
 import routes, { RouteType } from 'routes';
+import { MdClose } from 'react-icons/md';
 
 // Import Dashboard directly - AdminLayout is already within AuthProvider
 import Dashboard from 'views/admin/dashboard';
@@ -13,8 +15,16 @@ import CategoriesListPage from 'views/admin/categories/CategoriesListPage';
 import CategoryFormPage from 'views/admin/categories/CategoryFormPage';
 import SalesListPage from 'views/admin/sales/SalesListPage';
 import CreateSalePage from 'views/admin/sales/CreateSalePage';
+import EditSalePage from 'views/admin/sales/EditSalePage';
 import SaleDetailPage from 'views/admin/sales/SaleDetailPage';
 import ReportsPage from 'views/admin/reports/ReportsPage';
+import UsersListPage from 'views/admin/users/UsersListPage';
+import UserFormPage from 'views/admin/users/UserFormPage';
+import TenantsListPage from 'views/admin/tenants/TenantsListPage';
+import TenantFormPage from 'views/admin/tenants/TenantFormPage';
+import StockMovementsListPage from 'views/admin/stock/StockMovementsListPage';
+import CreateStockMovementPage from 'views/admin/stock/CreateStockMovementPage';
+import AdjustStockPage from 'views/admin/stock/AdjustStockPage';
 
 interface AdminLayoutProps {
   theme?: any;
@@ -25,6 +35,7 @@ export default function AdminLayout({ theme, setTheme }: AdminLayoutProps) {
   const [fixed] = useState(false);
   const [toggleSidebar, setToggleSidebar] = useState(false);
   const { onOpen } = useDisclosure();
+  const authContext = useContext(AuthContext);
 
   const getRoute = () => {
     return window.location.pathname !== '/admin/full-screen-maps';
@@ -153,6 +164,50 @@ export default function AdminLayout({ theme, setTheme }: AdminLayoutProps) {
               minH="100vh"
               pt="50px"
             >
+              {/* Impersonation Banner */}
+              {authContext?.isImpersonating && authContext.originalUser && (
+                <Alert
+                  status="warning"
+                  variant="left-accent"
+                  mb="20px"
+                  borderRadius="md"
+                >
+                  <AlertIcon />
+                  <Box flex="1">
+                    <AlertTitle>Impersonating User</AlertTitle>
+                    <AlertDescription>
+                      <HStack spacing={2} align="center">
+                        <Text fontSize="sm">
+                          You are currently viewing as{' '}
+                          <strong>
+                            {authContext.user?.firstName} {authContext.user?.lastName}
+                          </strong>
+                          . Original user:{' '}
+                          <strong>
+                            {authContext.originalUser.firstName}{' '}
+                            {authContext.originalUser.lastName}
+                          </strong>
+                          .
+                        </Text>
+                        <Button
+                          size="sm"
+                          colorScheme="orange"
+                          variant="solid"
+                          onClick={() => {
+                            if (authContext.stopImpersonating) {
+                              authContext.stopImpersonating();
+                              window.location.href = '/admin/dashboard';
+                            }
+                          }}
+                          leftIcon={<MdClose />}
+                        >
+                          Stop Impersonating
+                        </Button>
+                      </HStack>
+                    </AlertDescription>
+                  </Box>
+                </Alert>
+              )}
               <Routes>
                 {/* Dashboard route - defined directly to ensure AuthProvider context */}
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -167,9 +222,22 @@ export default function AdminLayout({ theme, setTheme }: AdminLayoutProps) {
                 {/* Sales routes */}
                 <Route path="/sales" element={<SalesListPage />} />
                 <Route path="/sales/new" element={<CreateSalePage />} />
+                <Route path="/sales/:id/edit" element={<EditSalePage />} />
                 <Route path="/sales/:id" element={<SaleDetailPage />} />
                 {/* Reports routes */}
                 <Route path="/reports" element={<ReportsPage />} />
+                {/* Users routes */}
+                <Route path="/users" element={<UsersListPage />} />
+                <Route path="/users/new" element={<UserFormPage />} />
+                <Route path="/users/:id" element={<UserFormPage />} />
+                {/* Tenants routes */}
+                <Route path="/tenants" element={<TenantsListPage />} />
+                <Route path="/tenants/new" element={<TenantFormPage />} />
+                <Route path="/tenants/:id" element={<TenantFormPage />} />
+                {/* Stock routes */}
+                <Route path="/stock/movements" element={<StockMovementsListPage />} />
+                <Route path="/stock/movements/new" element={<CreateStockMovementPage />} />
+                <Route path="/stock/adjust/:productId" element={<AdjustStockPage />} />
                 {getRoutes(routes)}
                 <Route
                   path="/"
